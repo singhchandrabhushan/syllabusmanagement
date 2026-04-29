@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <style>
         :root {
             --bg-deep: #030712;
@@ -41,6 +43,112 @@
             overflow-x: hidden;
         }
 
+        /* Auth Overlay */
+        .auth-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-deep);
+            z-index: 3000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            padding: 3rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-card h2 { margin-bottom: 2rem; font-size: 2rem; font-weight: 800; }
+        .auth-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 12px;
+            color: #fff;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        .auth-btn {
+            width: 100%;
+            background: var(--accent);
+            color: var(--bg-deep);
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .auth-toggle {
+            margin-top: 1.5rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .auth-toggle span { color: var(--accent); font-weight: 600; }
+
+        /* Delete Button */
+        .delete-btn {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        .delete-btn:hover { background: var(--danger); color: #fff; }
+
+        /* Logout Button */
+        .logout-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 2rem;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+        /* Upload Zone */
+        .upload-card {
+            background: var(--card-bg);
+            border: 2px dashed var(--border);
+            padding: 3rem;
+            border-radius: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 2.5rem;
+        }
+        .upload-card:hover { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+        .upload-card i { font-size: 2rem; color: var(--accent); margin-bottom: 1rem; display: block; }
+
+        /* Verification Form */
+        .form-group { margin-bottom: 1.5rem; text-align: left; }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-dim); margin-bottom: 0.5rem; text-transform: uppercase; }
+        .form-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.8rem; border-radius: 10px; color: #fff; }
+
         /* Sidebar - Glassmorphism */
         .sidebar {
             width: 340px;
@@ -52,14 +160,68 @@
             position: sticky;
             top: 0;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
-        .sidebar h2 {
-            font-size: 0.75rem;
+        .user-profile {
+            position: relative;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .profile-circle {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent), #60a5fa);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: var(--accent);
+            font-size: 1.2rem;
+            color: var(--bg-deep);
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .profile-circle:hover { transform: scale(1.1); }
+
+        .profile-menu {
+            position: absolute;
+            top: 70px;
+            background: var(--modal-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.5rem;
+            width: 180px;
+            display: none;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .profile-menu button {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .profile-menu button:hover { background: rgba(255,255,255,0.05); }
+        .profile-menu button.danger { color: var(--danger); }
+        .profile-menu button.danger:hover { background: rgba(244, 63, 94, 0.1); }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border);
             margin-bottom: 2rem;
         }
 
@@ -120,6 +282,7 @@
             letter-spacing: -0.02em;
             background: linear-gradient(to bottom right, #fff, #94a3b8);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
         }
@@ -310,18 +473,47 @@
 </head>
 <body>
 
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-card">
+            <h2 id="auth-title">Welcome Back</h2>
+            <input type="text" id="auth-username" class="auth-input" placeholder="Username">
+            <input type="password" id="auth-password" class="auth-input" placeholder="Password">
+            <button id="auth-submit" class="auth-btn">Sign In</button>
+            <div class="auth-toggle" id="auth-toggle">Don't have an account? <span>Sign Up</span></div>
+        </div>
+    </div>
+
     <aside class="sidebar">
-        <h2>Schedule & Deadlines</h2>
+        <div class="user-profile">
+            <div class="profile-circle" id="profile-initials" onclick="toggleProfileMenu(event)">??</div>
+            <div class="profile-menu" id="profile-menu">
+                <button onclick="logoutWithConfirm()">Logout</button>
+                <button onclick="deleteAccountWithConfirm()" class="danger">Delete Account</button>
+            </div>
+        </div>
+        <div class="sidebar-divider"></div>
+        <h2 id="deadline-header" style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 1.5rem; display: none;">Schedule & Deadlines</h2>
         <div id="deadline-list"></div>
     </aside>
 
     <main class="main-content">
         <div class="header">
-            <h1>Syllabus Pro</h1>
+            <h1 id="welcome-text">Syllabus Pro</h1>
             <p>Your academic command center.</p>
         </div>
 
+        <div class="upload-card" id="upload-trigger">
+            <i>&plus;</i>
+            <h3>Upload New Syllabus</h3>
+            <p>Drop PDF or DOCX here or click to browse</p>
+            <input type="file" id="file-input" hidden accept=".pdf,.docx,.doc">
+        </div>
+
         <div class="course-grid" id="course-grid"></div>
+
+        <footer style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); font-size: 0.9rem;">
+            <p>© 2026 Chandra Bhushan Singh. All rights reserved.</p>
+        </footer>
     </main>
 
     <div class="modal-overlay" id="modal-overlay">
@@ -332,77 +524,320 @@
     </div>
 
     <script>
-        const courseData = [
-            {
-                id: 0,
-                code: "CIS 4250",
-                title: "Ethical Issues & Professional Conduct",
-                instructor: "Raiyan Abdul Baten, Ph.D.",
-                email: "rbaten@usf.edu",
-                time: "TR 6:30 pm - 7:45 pm",
-                location: "CWY 107",
-                officeHours: "Tue 9:00 am - 12:00 pm (ENG 116)",
-                grading: [
-                    { name: "End-of-topic quizzes", weight: 35 },
-                    { name: "Participation", weight: 20 },
-                    { name: "Final project", weight: 35 },
-                    { name: "Final exam", weight: 10 }
-                ],
-                events: [
-                    { name: "Final Project (Written)", date: "2025-11-25", type: "project" },
-                    { name: "Final Project (Video)", date: "2025-12-01", type: "project" },
-                    { name: "Final Exam", date: "2025-12-11", type: "exam" }
-                ]
-            },
-            {
-                id: 1,
-                code: "COT 4400",
-                title: "Analysis of Algorithms",
-                instructor: "Oguzhan Topsakal, Ph.D.",
-                email: "topsakal@usf.edu",
-                time: "M, W 5:00 pm – 6:15 pm",
-                location: "ISA 1061",
-                officeHours: "MW 3:30-4:30 pm (BEH-317), Tue 2:30-4:30 pm (Teams)",
-                grading: [
-                    { name: "Exams", weight: 60 },
-                    { name: "Homework", weight: 20 },
-                    { name: "Project(s)", weight: 10 },
-                    { name: "Participation", weight: 10 }
-                ],
-                events: [
-                    { name: "Exam 1", date: "2024-02-23", type: "exam" },
-                    { name: "Exam 2", date: "2024-03-31", type: "exam" },
-                    { name: "Project Part 1 Due", date: "2024-10-21", type: "project" },
-                    { name: "Project Part 3 Due", date: "2024-11-18", type: "project" }
-                ]
-            },
-            {
-                id: 2,
-                code: "COP 4600",
-                title: "Operating Systems",
-                instructor: "Mauricio Pamplona Segundo",
-                email: "mauriciop@usf.edu",
-                time: "T, R 6:30 pm - 7:45 pm",
-                location: "CHE 103 / CPR 115",
-                officeHours: "Check Canvas",
-                grading: [
-                    { name: "Midterms", weight: 40 },
-                    { name: "Final Exam", weight: 30 },
-                    { name: "Projects", weight: 25 },
-                    { name: "Attendance Quizzes", weight: 5 }
-                ],
-                events: [
-                    { name: "Project #1 Due", date: "2025-02-13", type: "project" },
-                    { name: "Midterm #1", date: "2025-02-15", type: "exam" },
-                    { name: "Project #2 Due", date: "2025-03-27", type: "project" },
-                    { name: "Midterm #2", date: "2025-03-29", type: "exam" },
-                    { name: "Project #3 Due", date: "2025-05-01", type: "project" }
-                ]
-            }
-        ];
+        // PDF.js worker setup
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        function openModal(id) {
-            const course = courseData.find(c => c.id === id);
+        // --- State Management ---
+        const Store = {
+            getUsers: () => JSON.parse(localStorage.getItem('syllabus_pro_users') || '[]'),
+            saveUsers: (users) => localStorage.setItem('syllabus_pro_users', JSON.stringify(users)),
+            getActiveUser: () => JSON.parse(localStorage.getItem('syllabus_pro_active')),
+            setActiveUser: (user) => localStorage.setItem('syllabus_pro_active', JSON.stringify(user)),
+            clearActiveUser: () => localStorage.removeItem('syllabus_pro_active')
+        };
+
+        let currentUser = Store.getActiveUser();
+
+        // --- Authentication ---
+        const authOverlay = document.getElementById('auth-overlay');
+        const authTitle = document.getElementById('auth-title');
+        const authSubmit = document.getElementById('auth-submit');
+        const authToggle = document.getElementById('auth-toggle');
+        const authUsername = document.getElementById('auth-username');
+        const authPassword = document.getElementById('auth-password');
+        let isLoginMode = true;
+
+        function updateAuthUI() {
+            if (currentUser) {
+                authOverlay.style.display = 'none';
+                document.getElementById('welcome-text').innerText = `Welcome, ${currentUser.username}`;
+                
+                // Set Profile Initials (First and Last letter)
+                const name = currentUser.username;
+                const initials = (name[0] + name[name.length - 1]).toUpperCase();
+                document.getElementById('profile-initials').innerText = initials;
+                
+                renderDashboard();
+            } else {
+                authOverlay.style.display = 'flex';
+                authTitle.innerText = isLoginMode ? 'Welcome Back' : 'Create Account';
+                authSubmit.innerText = isLoginMode ? 'Sign In' : 'Sign Up';
+                authToggle.innerHTML = isLoginMode ? "Don't have an account? <span>Sign Up</span>" : "Already have an account? <span>Sign In</span>";
+            }
+        }
+
+        function toggleProfileMenu(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('profile-menu');
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function logoutWithConfirm() {
+            if (confirm('Are you sure you want to log out?')) {
+                Store.clearActiveUser();
+                currentUser = null;
+                location.reload();
+            }
+        }
+
+        function deleteAccountWithConfirm() {
+            if (confirm('CRITICAL: Are you sure you want to delete your account? This action cannot be undone and all your syllabus data will be permanently erased.')) {
+                const users = Store.getUsers().filter(u => u.username !== currentUser.username);
+                Store.saveUsers(users);
+                Store.clearActiveUser();
+                currentUser = null;
+                location.reload();
+            }
+        }
+
+        // Close menu when clicking elsewhere
+        window.addEventListener('click', () => {
+            document.getElementById('profile-menu').style.display = 'none';
+        });
+
+        authToggle.onclick = () => {
+            isLoginMode = !isLoginMode;
+            updateAuthUI();
+        };
+
+        authSubmit.onclick = () => {
+            const username = authUsername.value.trim();
+            const password = authPassword.value.trim();
+            if (!username || !password) return alert('Please fill all fields');
+
+            const users = Store.getUsers();
+            if (isLoginMode) {
+                const user = users.find(u => u.username === username && u.password === password);
+                if (user) {
+                    currentUser = user;
+                    Store.setActiveUser(user);
+                    updateAuthUI();
+                } else alert('Invalid credentials');
+            } else {
+                if (users.find(u => u.username === username)) return alert('Username taken');
+                const newUser = { username, password, summaries: [] };
+                users.push(newUser);
+                Store.saveUsers(users);
+                currentUser = newUser;
+                Store.setActiveUser(newUser);
+                updateAuthUI();
+            }
+        };
+
+        // --- PDF & DOCX Processing & Smart Extraction ---
+        const fileInput = document.getElementById('file-input');
+        const uploadTrigger = document.getElementById('upload-trigger');
+
+        uploadTrigger.onclick = () => fileInput.click();
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            uploadTrigger.innerHTML = '<i>⏳</i><h3>Processing...</h3><p>Extracting data from your syllabus</p>';
+            
+            try {
+                let text = '';
+                if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
+                    text = await extractTextFromPDF(file);
+                } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+                    text = await extractTextFromDOCX(file);
+                } else {
+                    throw new Error("Unsupported file type");
+                }
+                
+                const guessedData = parseSyllabusText(text);
+                showVerificationForm(guessedData);
+            } catch (err) {
+                alert('Error processing file: ' + err.message);
+                console.error(err);
+            } finally {
+                uploadTrigger.innerHTML = '<i>&plus;</i><h3>Upload New Syllabus</h3><p>Drop PDF or DOCX here or click to browse</p>';
+            }
+        };
+
+        async function extractTextFromPDF(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= Math.min(pdf.numPages, 8); i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                fullText += content.items.map(item => item.str).join(' ') + '\n';
+            }
+            return fullText;
+        }
+
+        async function extractTextFromDOCX(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            return result.value;
+        }
+
+        function parseSyllabusText(text) {
+            const codeMatch = text.match(/[A-Z]{3,4}\s?\d{3,4}/);
+            const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+            
+            const instructorMatch = text.match(/(?:Instructor|Professor|Lecturer)(?:\s*Name)?[:\s]+([A-Z][a-z.]+(?:\s[A-Z][a-z.]+)+)/i);
+            const nameWithTitleMatch = text.match(/([A-Z][a-z.]+(?:\s[A-Z][a-z.]+)+),\s*(?:Ph\.D\.|PhD|Dr\.)/i);
+
+            const timeMatch = text.match(/(?:Time|Meeting|Days)[:\s]+([^\n]{5,40})/i);
+            const locationMatch = text.match(/(?:Location|Room|Building)[:\s]+([^\n]{5,30})/i);
+            const officeMatch = text.match(/(?:Office Hours|Hours)[:\s]+([^\n]{10,50})/i);
+
+            // Improved Events/Deadlines Extraction
+            const events = [];
+            // Updated Date Regex to catch more formats
+            const dateRegex = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s?\.?\d{1,2}/gi;
+            let m;
+            const seenDates = new Set();
+            
+            while ((m = dateRegex.exec(text)) !== null && events.length < 8) {
+                const dateStr = m[0];
+                if (seenDates.has(dateStr)) continue;
+                
+                const context = text.substring(Math.max(0, m.index - 30), Math.min(text.length, m.index + 60));
+                if (/exam|homework|project|due|quiz|midterm|test|assignment/i.test(context)) {
+                    const eventName = context.replace(dateStr, '').replace(/[:\-]/g, '').trim().substring(0, 35);
+                    events.push({ name: eventName || 'Assignment', date: dateStr });
+                    seenDates.add(dateStr);
+                }
+            }
+
+            const grading = [];
+            const gradingRegex = /([a-zA-Z\s]{3,25})[:\s-]{1,3}(\d{1,2})%/g;
+            while ((m = gradingRegex.exec(text)) !== null) {
+                if (grading.length < 8) grading.push({ name: m[1].trim(), weight: parseInt(m[2]) });
+            }
+
+            return {
+                code: codeMatch ? codeMatch[0] : '',
+                title: text.split('\n')[0].substring(0, 60).trim(),
+                instructor: instructorMatch ? instructorMatch[1] : (nameWithTitleMatch ? nameWithTitleMatch[0] : ''),
+                email: emailMatch ? emailMatch[0] : '',
+                time: timeMatch ? timeMatch[1].trim() : '',
+                location: locationMatch ? locationMatch[1].trim() : '',
+                officeHours: officeMatch ? officeMatch[1].trim() : '',
+                grading: grading.length ? grading : [{ name: 'Exams', weight: 40 }, { name: 'Assignments', weight: 60 }],
+                events: events
+            };
+        }
+
+        function showVerificationForm(data) {
+            const body = document.getElementById('modal-body');
+            body.innerHTML = `
+                <div class="modal-header"><h2>Verify Details</h2></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Course Code</label>
+                        <input type="text" id="f-code" class="form-input" value="${data.code}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Course Title</label>
+                        <input type="text" id="f-title" class="form-input" value="${data.title}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Instructor & Email</label>
+                    <div style="display:flex; gap:10px">
+                        <input type="text" id="f-instructor" class="form-input" placeholder="Name" value="${data.instructor}">
+                        <input type="text" id="f-email" class="form-input" placeholder="Email" value="${data.email}">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">Meeting Time</label>
+                        <input type="text" id="f-time" class="form-input" placeholder="e.g. MW 10am" value="${data.time}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" id="f-location" class="form-input" placeholder="Room #" value="${data.location}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Office Hours</label>
+                        <input type="text" id="f-office" class="form-input" placeholder="Days/Time" value="${data.officeHours}">
+                    </div>
+                </div>
+                
+                <div id="f-grading-container">
+                    <label class="form-label">Grading Breakdown (%)</label>
+                    ${data.grading.map((g, i) => `
+                        <div style="display:flex; gap:10px; margin-bottom:10px">
+                            <input type="text" class="form-input g-name" value="${g.name}" placeholder="Item">
+                            <input type="number" class="form-input g-weight" value="${g.weight}" style="width:80px">
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div id="f-events-container">
+                    <label class="form-label">Deadlines (Exams/Homework)</label>
+                    ${(data.events.length ? data.events : [{name:'', date:''}]).map(e => `
+                        <div style="display:flex; gap:10px; margin-bottom:10px">
+                            <input type="text" class="form-input e-name" value="${e.name}" placeholder="Event">
+                            <input type="text" class="form-input e-date" value="${e.date}" placeholder="Date">
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <button onclick="saveSyllabus()" class="auth-btn">Save Summary</button>
+            `;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function saveSyllabus() {
+            const grading = [];
+            document.querySelectorAll('#f-grading-container > div').forEach(div => {
+                const name = div.querySelector('.g-name').value;
+                const weight = parseInt(div.querySelector('.g-weight').value);
+                if (name && weight) grading.push({ name, weight });
+            });
+
+            const events = [];
+            document.querySelectorAll('#f-events-container > div').forEach(div => {
+                const name = div.querySelector('.e-name').value;
+                const date = div.querySelector('.e-date').value;
+                if (name && date) events.push({ name, date });
+            });
+
+            const newSummary = {
+                id: Date.now(),
+                code: document.getElementById('f-code').value,
+                title: document.getElementById('f-title').value,
+                instructor: document.getElementById('f-instructor').value,
+                email: document.getElementById('f-email').value,
+                time: document.getElementById('f-time').value,
+                location: document.getElementById('f-location').value,
+                officeHours: document.getElementById('f-office').value,
+                grading: grading,
+                events: events
+            };
+
+            currentUser.summaries.push(newSummary);
+            const users = Store.getUsers();
+            const userIndex = users.findIndex(u => u.username === currentUser.username);
+            users[userIndex] = currentUser;
+            Store.saveUsers(users);
+            Store.setActiveUser(currentUser);
+            
+            document.getElementById('modal-overlay').style.display = 'none';
+            renderDashboard();
+        }
+
+        function deleteSummary(id, e) {
+            e.stopPropagation();
+            if (!confirm('Delete this syllabus?')) return;
+            
+            currentUser.summaries = currentUser.summaries.filter(s => s.id !== id);
+            const users = Store.getUsers();
+            const userIndex = users.findIndex(u => u.username === currentUser.username);
+            users[userIndex] = currentUser;
+            Store.saveUsers(users);
+            Store.setActiveUser(currentUser);
+            renderDashboard();
+        }
+
+        function openDetails(id) {
+            const course = currentUser.summaries.find(c => c.id === id);
             const body = document.getElementById('modal-body');
             body.innerHTML = `
                 <div class="modal-header">
@@ -412,61 +847,88 @@
                 <div class="info-grid">
                     <div>
                         <span class="info-label">Instructor</span>
-                        <div class="info-value">${course.instructor}</div>
-                        <div class="info-value" style="color:var(--accent); font-size: 0.9rem">${course.email}</div>
+                        <div class="info-value">${course.instructor || 'Not Set'}</div>
+                        <div class="info-value" style="color:var(--accent); font-size: 0.9rem">${course.email || ''}</div>
                     </div>
                     <div>
-                        <span class="info-label">Meeting Times</span>
-                        <div class="info-value">${course.time}</div>
-                        <div class="info-value">${course.location}</div>
+                        <span class="info-label">Meeting Info</span>
+                        <div class="info-value">${course.time || 'TBD'}</div>
+                        <div class="info-value" style="font-size: 0.9rem; color: var(--text-dim)">${course.location || ''}</div>
                     </div>
                     <div>
                         <span class="info-label">Office Hours</span>
-                        <div class="info-value">${course.officeHours}</div>
+                        <div class="info-value">${course.officeHours || 'Check Canvas'}</div>
                     </div>
                 </div>
-                <div class="grading-section">
-                    <span class="info-label">Grading Breakdown</span>
-                    ${course.grading.map(g => `
-                        <div class="grading-item">
-                            <span>${g.name}</span>
-                            <span style="font-weight:700">${g.weight}%</span>
-                        </div>
-                        <div class="progress-container">
-                            <div class="progress-bar" style="width:${g.weight}%"></div>
-                        </div>
-                    `).join('')}
+                <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap: 2rem;">
+                    <div class="grading-section">
+                        <span class="info-label">Grading Breakdown</span>
+                        ${course.grading.map(g => `
+                            <div class="grading-item">
+                                <span>${g.name}</span>
+                                <span style="font-weight:700">${g.weight}%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width:${g.weight}%"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="grading-section" style="background: rgba(56, 189, 248, 0.05)">
+                        <span class="info-label">Upcoming Deadlines</span>
+                        ${course.events.map(e => `
+                            <div class="deadline-item" style="opacity:1; animation:none; margin-bottom:0.75rem; padding: 0.75rem;">
+                                <div class="deadline-date" style="font-size:0.6rem">${e.date}</div>
+                                <div class="deadline-title" style="font-size:0.8rem">${e.name}</div>
+                            </div>
+                        `).join('') || '<div style="color:var(--text-dim); font-size: 0.8rem">No deadlines found.</div>'}
+                    </div>
                 </div>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
-        function render() {
+        function renderDashboard() {
             const grid = document.getElementById('course-grid');
             const list = document.getElementById('deadline-list');
-            let events = [];
+            grid.innerHTML = '';
+            list.innerHTML = '';
 
-            courseData.forEach((course, index) => {
+            if (!currentUser.summaries.length) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-dim); margin-top: 2rem;">No syllabuses uploaded yet. Use the card above to start!</p>';
+                return;
+            }
+
+            let allEvents = [];
+
+            currentUser.summaries.forEach((course, index) => {
                 const card = document.createElement('div');
                 card.className = 'course-card';
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.onclick = () => openModal(course.id);
+                card.onclick = () => openDetails(course.id);
                 card.innerHTML = `
+                    <button class="delete-btn" onclick="deleteSummary(${course.id}, event)">Delete</button>
                     <span class="course-code">${course.code}</span>
                     <div class="course-title">${course.title}</div>
-                    <button class="view-btn">Full Syllabus</button>
+                    <button class="view-btn">View Summary</button>
                 `;
                 grid.appendChild(card);
-                course.events.forEach(e => events.push({...e, code: course.code}));
+                
+                course.events.forEach(e => allEvents.push({...e, code: course.code}));
             });
 
-            events.sort((a,b) => new Date(a.date) - new Date(b.date));
-            events.forEach((e, i) => {
+            // Toggle Header Visibility
+            const header = document.getElementById('deadline-header');
+            if (allEvents.length > 0) {
+                header.style.display = 'block';
+            } else {
+                header.style.display = 'none';
+            }
+
+            allEvents.forEach((e, i) => {
                 const item = document.createElement('div');
                 item.className = 'deadline-item';
                 item.style.animationDelay = `${i * 0.1}s`;
                 item.innerHTML = `
-                    <div class="deadline-date">${new Date(e.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}</div>
+                    <div class="deadline-date">${e.date}</div>
                     <div class="deadline-title">${e.name}</div>
                     <div class="deadline-course">${e.code}</div>
                 `;
@@ -474,9 +936,10 @@
             });
         }
 
+        // --- Init ---
         document.getElementById('close-modal').onclick = () => document.getElementById('modal-overlay').style.display = 'none';
         window.onclick = (e) => { if(e.target.id === 'modal-overlay') document.getElementById('modal-overlay').style.display = 'none'; }
-        document.addEventListener('DOMContentLoaded', render);
+        document.addEventListener('DOMContentLoaded', updateAuthUI);
     </script>
 </body>
 </html>
