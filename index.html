@@ -13,6 +13,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -28,44 +30,103 @@
     </div>
 
     <aside class="sidebar">
-        <div class="user-profile">
-            <div class="profile-circle" id="profile-initials" onclick="toggleProfileMenu(event)">??</div>
+        <div class="sidebar-header">
+            <div class="logo-icon"><i data-lucide="graduation-cap"></i></div>
+            <div class="logo-text">SyllabusPro</div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="window.location.href='index.html'"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+            <div class="nav-item" onclick="window.location.href='courses.html'"><i data-lucide="book-open"></i> Courses</div>
+            <div class="nav-item" onclick="window.location.href='settings.html'"><i data-lucide="settings"></i> Settings</div>
+        </nav>
+
+        <div class="user-profile" onclick="toggleProfileMenu(event)">
+            <div class="profile-circle" id="profile-initials">??</div>
+            <div class="user-info">
+                <div class="user-name" id="user-display-name">Loading...</div>
+                <div class="user-role">Student Account</div>
+            </div>
+            <i data-lucide="more-vertical" style="width:16px; color:var(--text-dim)"></i>
             <div class="profile-menu" id="profile-menu">
-                <button onclick="logoutWithConfirm()">Logout</button>
-                <button onclick="deleteAccountWithConfirm()" class="danger">Delete Account</button>
+                <button onclick="logoutWithConfirm()"><i data-lucide="log-out"></i> Sign Out</button>
+                <button onclick="deleteAccountWithConfirm()" class="danger"><i data-lucide="trash-2"></i> Delete Data</button>
             </div>
         </div>
-        <div class="sidebar-divider"></div>
-        <h2 id="deadline-header" style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 1.5rem; display: none;">Schedule & Deadlines</h2>
-        <div id="deadline-list"></div>
     </aside>
 
     <main class="main-content">
-        <div class="header">
-            <h1 id="welcome-text">Syllabus Pro</h1>
-            <p>Your academic command center.</p>
-        </div>
+        <header class="dashboard-header">
+            <div class="header-text">
+                <h1 id="welcome-text">Academic Dashboard</h1>
+                <p>Overview of your current academic progress</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-minimal clickable-card" onclick="window.location.href='courses.html'">
+                    <span class="stat-label">Enrolled</span>
+                    <span class="stat-value" id="stat-courses">0</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-minimal clickable-card" onclick="scrollToSection('right-panel')">
+                    <span class="stat-label">Tasks</span>
+                    <span class="stat-value" id="stat-deadlines">0</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-minimal">
+                    <span class="stat-label">Year</span>
+                    <span class="stat-value">2026</span>
+                </div>
+            </div>
+        </header>
 
+        <section class="action-zone">
+            <div class="clean-upload-card" id="upload-trigger">
+                <div class="upload-icon-box">
+                    <i data-lucide="plus"></i>
+                </div>
+                <div class="upload-info">
+                    <h3>Add Course Material</h3>
+                    <p>Sync your syllabus PDF or DOCX</p>
+                </div>
+                <input type="file" id="file-input" hidden accept=".pdf,.docx,.doc">
+            </div>
+        </section>
+
+        <section class="content-section" id="courses-section">
+            <div class="section-title-row">
+                <h2>Active Courses</h2>
+                <div class="view-toggle">
+                    <i data-lucide="layout-grid" class="active"></i>
+                    <i data-lucide="list"></i>
+                </div>
+            </div>
+            <div class="course-grid" id="course-grid"></div>
+        </section>
+
+        <footer class="clean-footer">
+            <p>© 2026 Chandra Bhushan Singh</p>
+        </footer>
+    </main>
+
+    <aside class="right-panel">
         <div id="calendar-container">
             <div id="calendar"></div>
         </div>
 
-        <div class="upload-card" id="upload-trigger">
-            <i>&plus;</i>
-            <h3>Upload New Syllabus</h3>
-            <p>Drop PDF or DOCX here or click to browse</p>
-            <input type="file" id="file-input" hidden accept=".pdf,.docx,.doc">
+        <div class="right-section">
+            <div class="section-header">
+                <h3 id="deadline-header" style="display: none;">Today's Agenda</h3>
+                <p>Upcoming academic milestones</p>
+            </div>
+            <div id="deadline-list"></div>
         </div>
-
-        <div class="course-grid" id="course-grid"></div>
-
-        <footer style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); font-size: 0.9rem;">
-            <p>© 2026 Chandra Bhushan Singh. All rights reserved.</p>
-        </footer>
-    </main>
+    </aside>
 
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal-content">
+            <button class="save-image-btn" onclick="saveAsImage()"><i data-lucide="download"></i> Save as Image</button>
             <button class="close-modal" id="close-modal">&times;</button>
             <div id="modal-body"></div>
         </div>
@@ -81,8 +142,16 @@
             saveUsers: (users) => localStorage.setItem('syllabus_pro_users', JSON.stringify(users)),
             getActiveUser: () => JSON.parse(localStorage.getItem('syllabus_pro_active')),
             setActiveUser: (user) => localStorage.setItem('syllabus_pro_active', JSON.stringify(user)),
-            clearActiveUser: () => localStorage.removeItem('syllabus_pro_active')
+            clearActiveUser: () => localStorage.removeItem('syllabus_pro_active'),
+            getTheme: () => localStorage.getItem('syllabus_pro_theme') || 'light',
+            setTheme: (theme) => {
+                localStorage.setItem('syllabus_pro_theme', theme);
+                document.documentElement.setAttribute('data-theme', theme);
+            }
         };
+
+        // Initialize Theme
+        Store.setTheme(Store.getTheme());
 
         let currentUser = Store.getActiveUser();
         let calendar = null;
@@ -154,6 +223,38 @@
         window.onload = function () {
             initGoogleAuth();
             updateAuthUI();
+            lucide.createIcons();
+
+            // Check if we should open settings from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('openSettings') === 'true') {
+                openSettings();
+            }
+        }
+
+        function saveAsImage() {
+            const modalContent = document.querySelector('.modal-content');
+            const closeBtn = document.querySelector('.close-modal');
+            const saveBtn = document.querySelector('.save-image-btn');
+            
+            // Temporarily hide buttons for the screenshot
+            closeBtn.style.display = 'none';
+            saveBtn.style.display = 'none';
+
+            html2canvas(modalContent, {
+                backgroundColor: '#ffffff',
+                borderRadius: 32,
+                scale: 2
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'syllabus-summary.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                // Restore buttons
+                closeBtn.style.display = 'flex';
+                saveBtn.style.display = 'flex';
+            });
         }
 
         // --- Authentication ---
@@ -174,6 +275,7 @@
                 }, 300);
                 
                 document.getElementById('welcome-text').innerText = `Welcome, ${currentUser.username}`;
+                document.getElementById('user-display-name').innerText = currentUser.username;
                 
                 // Set Profile Initials
                 const name = currentUser.username || "User";
@@ -182,12 +284,14 @@
                 
                 renderDashboard();
                 initCalendar();
+                lucide.createIcons();
             } else {
                 authOverlay.style.display = 'flex';
                 authTitle.innerText = isLoginMode ? 'Welcome Back' : 'Create Account';
                 authSubmit.innerText = isLoginMode ? 'Sign In' : 'Sign Up';
                 authToggle.innerHTML = isLoginMode ? "Don't have an account? <span>Sign Up</span>" : "Already have an account? <span>Sign In</span>";
                 document.getElementById('calendar-container').style.display = 'none';
+                lucide.createIcons();
             }
         }
 
@@ -201,24 +305,24 @@
                 course.events.forEach(e => {
                     const date = parseDate(e.date);
                     if (date) {
+                        const isExam = /exam|midterm|test|quiz|final/i.test(e.name);
+                        const isHomework = /homework|assignment|hw|project|due/i.test(e.name);
+                        
                         events.push({
                             title: `[${course.code}] ${e.name}`,
                             start: date,
                             allDay: true,
                             extendedProps: { courseId: course.id },
-                            backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                            borderColor: 'var(--accent)',
+                            backgroundColor: isExam ? 'rgba(244, 63, 94, 0.2)' : (isHomework ? 'rgba(56, 189, 248, 0.2)' : 'rgba(251, 191, 36, 0.2)'),
+                            borderColor: isExam ? 'var(--danger)' : (isHomework ? 'var(--accent)' : 'var(--warning)'),
                             textColor: 'var(--text-main)'
                         });
                     }
                 });
             });
 
-            if (events.length > 0) {
-                document.getElementById('calendar-container').style.display = 'block';
-            } else {
-                document.getElementById('calendar-container').style.display = 'none';
-            }
+            // Always show calendar for active user
+            document.getElementById('calendar-container').style.display = 'block';
 
             if (calendar) {
                 calendar.removeAllEvents();
@@ -236,9 +340,11 @@
                     eventClick: function(info) {
                         openDetails(info.event.extendedProps.courseId);
                     },
-                    height: 'auto',
-                    contentHeight: 'auto',
-                    handleWindowResize: true
+                    aspectRatio: 1,
+                    handleWindowResize: true,
+                    eventDidMount: function(info) {
+                        // Tooltip or extra styling could go here
+                    }
                 });
                 calendar.render();
             }
@@ -259,7 +365,7 @@
             };
 
             // 1. Check for Month Day (e.g., "Oct 15", "October 2")
-            const monthDayMatch = clean.match(/([a-z]{3,})\s*(\d{1,2})/);
+            const monthDayMatch = clean.match(/([a-z]{3,})\s?\.?\s*(\d{1,2})/);
             if (monthDayMatch) {
                 const month = months[monthDayMatch[1]];
                 const day = parseInt(monthDayMatch[2]);
@@ -359,7 +465,15 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            uploadTrigger.innerHTML = '<i>⏳</i><h3>Processing...</h3><p>Extracting data from your syllabus</p>';
+            uploadTrigger.innerHTML = `
+                <div class="loader-box">
+                    <div class="spinner"></div>
+                    <div class="upload-info">
+                        <h3>Processing...</h3>
+                        <p>Extracting data from your syllabus</p>
+                    </div>
+                </div>
+            `;
             
             try {
                 let text = '';
@@ -385,10 +499,56 @@
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             let fullText = '';
-            for (let i = 1; i <= Math.min(pdf.numPages, 8); i++) {
+            
+            for (let i = 1; i <= Math.min(pdf.numPages, 15); i++) {
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
-                fullText += content.items.map(item => item.str).join(' ') + '\n';
+                
+                // Group items by Y coordinate with 3px tolerance (handles slight alignment issues)
+                const items = content.items;
+                const lines = [];
+                
+                items.forEach(item => {
+                    const y = item.transform[5];
+                    let foundLine = lines.find(l => Math.abs(l.y - y) < 3);
+                    if (!foundLine) {
+                        foundLine = { y: y, items: [] };
+                        lines.push(foundLine);
+                    }
+                    foundLine.items.push(item);
+                });
+                
+                // Sort lines by Y descending (top to bottom)
+                lines.sort((a, b) => b.y - a.y);
+                
+                let pageText = '';
+                lines.forEach(line => {
+                    // Sort items in line by X ascending (left to right)
+                    line.items.sort((a, b) => a.transform[4] - b.transform[4]);
+                    
+                    let lineText = '';
+                    let lastXEnd = -1;
+                    
+                    line.items.forEach(item => {
+                        const x = item.transform[4];
+                        const str = item.str;
+                        const fontSize = Math.abs(item.transform[0]);
+                        
+                        // Smart Joining: Only add space if gap is > 25% of font size
+                        // This prevents splitting a single word into fragments like "Nov ember"
+                        if (lastXEnd !== -1 && (x - lastXEnd) > fontSize * 0.25) {
+                            if (!lineText.endsWith(' ')) lineText += ' ';
+                        }
+                        
+                        lineText += str;
+                        // Use item.width if provided by PDF.js, else fallback to heuristic
+                        const charWidth = item.width || (str.length * fontSize * 0.5);
+                        lastXEnd = x + charWidth;
+                    });
+                    pageText += lineText + '\n';
+                });
+                
+                fullText += pageText + '\n';
             }
             return fullText;
         }
@@ -400,139 +560,431 @@
         }
 
         function parseSyllabusText(text) {
-            const codeMatch = text.match(/[A-Z]{3,4}\s?\d{3,4}/);
-            const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-            
-            const instructorMatch = text.match(/(?:Instructor|Professor|Lecturer)(?:\s*Name)?[:\s]+([A-Z][a-z.]+(?:\s[A-Z][a-z.]+)+)/i);
-            const nameWithTitleMatch = text.match(/([A-Z][a-z.]+(?:\s[A-Z][a-z.]+)+),\s*(?:Ph\.D\.|PhD|Dr\.)/i);
+            // Pre-process text: clean up extra whitespace and normalize line breaks
+            const cleanText = text.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim();
+            const lines = cleanText.split('\n').filter(l => l.trim().length > 0);
 
-            const timeMatch = text.match(/(?:Time|Meeting|Days)[:\s]+([^\n]{5,40})/i);
-            const locationMatch = text.match(/(?:Location|Room|Building)[:\s]+([^\n]{5,30})/i);
-            const officeMatch = text.match(/(?:Office Hours|Hours)[:\s]+([^\n]{10,50})/i);
+            // 1. Course Code
+            const codeMatch = cleanText.match(/[A-Z]{2,4}\s?\d{3,4}[A-Z]?/i);
+            const code = codeMatch ? codeMatch[0].toUpperCase() : '';
 
-            // Improved Events/Deadlines Extraction
-            const events = [];
-            // Updated Date Regex to catch more formats
-            const dateRegex = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s?\.?\d{1,2}/gi;
-            let m;
-            const seenDates = new Set();
+            // 2. Course Title Heuristic
+            let title = '';
+            for (let i = 0; i < Math.min(lines.length, 10); i++) {
+                const line = lines[i].trim();
+                if (/^(Syllabus|Course|University|Department|Semester|Fall|Spring|Summer|Winter|202\d)/i.test(line) && line.split(' ').length < 3) continue;
+                if (code && line.includes(code)) {
+                    title = line.replace(code, '').replace(/[:\-]/g, '').trim();
+                    if (title.length > 5) break;
+                    if (lines[i+1]) { title = lines[i+1].trim(); break; }
+                }
+                if (line.length > 10 && line.length < 100) { title = line; break; }
+            }
+            if (!title && lines.length > 0) title = lines[0].substring(0, 80).trim();
+
+            // 3. Contact Info (Refined)
+            const emailMatch = cleanText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+            const instructorMatch = cleanText.match(/(?:Instructor|Professor|Lecturer|Teacher|Faculty|Prof\.|Dr\.)(?:\s*Name)?[:\s]+([A-Z][a-z.]+(?:\s+[A-Z][a-z.]+)+)/i);
+            const phoneMatch = cleanText.match(/(?:Phone|Tel|Contact|Office Phone)[:\s]+([\d\-\(\)\s\.]{10,20})/i);
             
-            while ((m = dateRegex.exec(text)) !== null && events.length < 8) {
-                const dateStr = m[0];
-                if (seenDates.has(dateStr)) continue;
-                
-                const context = text.substring(Math.max(0, m.index - 30), Math.min(text.length, m.index + 60));
-                if (/exam|homework|project|due|quiz|midterm|test|assignment/i.test(context)) {
-                    const eventName = context.replace(dateStr, '').replace(/[:\-]/g, '').trim().substring(0, 35);
-                    events.push({ name: eventName || 'Assignment', date: dateStr });
-                    seenDates.add(dateStr);
+            // 4. Office & Office Hours (Refined)
+            let officeInfo = '';
+            const officePatterns = [
+                /(?:Office|Office Location|Office Room|Prof(?:\.|essor)? Office)[:\s]+([^\n]{2,60})/i,
+                // Look for building abbreviations followed by room numbers (e.g., ENG 116, PHY 202)
+                /\b[A-Z]{2,4}\s\d{2,4}[A-Z]?\b/g 
+            ];
+            
+            // Try explicitly labeled office first
+            const explicitOffice = cleanText.match(officePatterns[0]);
+            if (explicitOffice && !/online|hybrid|remote|zoom|teams/i.test(explicitOffice[1])) {
+                officeInfo = explicitOffice[1].trim();
+            } else {
+                // Fallback: look for building patterns that AREN'T the main class location
+                const matches = cleanText.match(officePatterns[1]);
+                if (matches) {
+                    // Pick one that is likely NOT the classroom if we have multiple
+                    officeInfo = matches[matches.length > 1 ? 1 : 0]; 
                 }
             }
 
-            const grading = [];
-            const gradingRegex = /([a-zA-Z\s]{3,25})[:\s-]{1,3}(\d{1,2})%/g;
-            while ((m = gradingRegex.exec(text)) !== null) {
-                if (grading.length < 8) grading.push({ name: m[1].trim(), weight: parseInt(m[2]) });
+            let officeHoursInfo = '';
+            const ohPatterns = [
+                /(?:Office Hours|Student Hours|Consultation Hours|Drop-in Hours|Meeting Hours)[:\s]+([^\n]{5,150})/i,
+                /(?:Consultation|Drop-in)[:\s]+([^\n]{5,100})/i
+            ];
+            
+            for (const p of ohPatterns) {
+                const m = cleanText.match(p);
+                if (m) {
+                    let val = m[1].trim();
+                    if (/\d|[MTWRF]|monday|tuesday|wednesday|thursday|friday/i.test(val)) {
+                        officeHoursInfo = val;
+                        break;
+                    }
+                }
+            }
+
+            // 5. TA Info
+            const taMatch = cleanText.match(/(?:TA|Teaching Assistant|Assistant)[:\s]+([A-Z][a-z.]+(?:\s+[A-Z][a-z.]+)+)/i);
+
+            // 6. Time and Place (Refined to filter out metadata)
+            let timeAndPlace = '';
+            
+            const dayPattern = /(?:M|T|W|Th|F|S|Mon|Tue|Wed|Thu|Fri|Sat|Sun|T\/Th|M\/W|MWF|TR)(?:[\s,&\/]+(?:M|T|W|Th|F|S|Mon|Tue|Wed|Thu|Fri|Sat|Sun|T\/Th|M\/W|MWF|TR))*/i;
+            const clockPattern = /\d{1,2}(?::\d{2})?\s?(?:am|pm)?\s?(?:-|to)\s?\d{1,2}(?::\d{2})?\s?(?:am|pm)?/i;
+            const locPattern = /(?:Room|Rm|Building|Bldg|Hall|Venue|Classroom|Place|Location|Teams|Zoom|Link)\s?[A-Z0-9-:\/\.\?&=]{1,30}/i;
+
+            const scheduleRegex = new RegExp(`(${dayPattern.source}\\s*${clockPattern.source})|(${clockPattern.source}\\s*${dayPattern.source})`, 'gi');
+            let schedules = [];
+            let sm;
+            while ((sm = scheduleRegex.exec(cleanText)) !== null) {
+                const match = sm[0].trim();
+                // Filter out instructor names/emails/titles often found near start
+                if (!/instructor|professor|email|term|year|fall|spring|202\d/i.test(match)) {
+                    schedules.push({text: match, index: sm.index});
+                }
+            }
+
+            if (schedules.length > 0) {
+                // Prefer schedules that mention Teams/Zoom if modality is Online
+                const bestSchedule = schedules[0]; 
+                let context = cleanText.substring(bestSchedule.index, bestSchedule.index + 150);
+                const locM = context.match(locPattern) || context.match(/\b[A-Z]{2,4}\s\d{2,4}[A-Z]?\b/);
+                
+                if (locM) {
+                    timeAndPlace = `${bestSchedule.text} | ${locM[0].trim()}`;
+                } else {
+                    timeAndPlace = bestSchedule.text;
+                }
+            }
+
+            if (!timeAndPlace) {
+                const fallbacks = [
+                    /(?:Time|Meeting|Days|Schedule|Class Time)[:\s]+([^\n]{5,80})/i,
+                    /(?:Location|Building|Place|Classroom|Room|Hall|Venue)[:\s]+([^\n]{3,60})/i
+                ];
+                for (const f of fallbacks) {
+                    const fm = cleanText.match(f);
+                    if (fm) { timeAndPlace = fm[1].trim(); break; }
+                }
+            }
+
+            timeAndPlace = timeAndPlace || 'TBD';
+
+            // 7. Events / Deadlines (Refined for full words)
+            const events = [];
+            const dateRegex = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s?\.?\s*\d{1,2}(?:\s*(?:st|nd|rd|th))?/gi;
+            const eventKeywords = /exam|homework|project|due|quiz|midterm|test|assignment|final|paper|presentation|essay|milestone/i;
+
+            function extractEvents(regex, textContent) {
+                let em;
+                const seenDates = new Set();
+                const lines = textContent.split('\n');
+                
+                while ((em = regex.exec(textContent)) !== null && events.length < 15) {
+                    const dateStr = em[0].trim();
+                    if (seenDates.has(dateStr)) continue;
+
+                    // Find the line containing this date
+                    const lineIdx = textContent.substring(0, em.index).split('\n').length - 1;
+                    const line = lines[lineIdx] || "";
+                    
+                    // Look for keyword in the same line or line below
+                    const context = (line + " " + (lines[lineIdx+1] || "")).trim();
+                    
+                    if (eventKeywords.test(context)) {
+                        let eventName = "";
+                        const kwMatch = context.match(eventKeywords);
+                        
+                        if (kwMatch) {
+                            // Extract a clean phrase around the keyword
+                            // Remove the date from the name to avoid redundancy
+                            let cleanPhrase = context.replace(dateStr, '').replace(/[:\.\-\*\[\]\(\)]/g, ' ').trim();
+                            
+                            // Take words around the keyword, but don't cut words
+                            const words = cleanPhrase.split(/\s+/);
+                            const kw = kwMatch[0].toLowerCase();
+                            const kwWordIdx = words.findIndex(w => w.toLowerCase().includes(kw));
+                            
+                            if (kwWordIdx !== -1) {
+                                // Take up to 3 words before and 4 words after keyword
+                                const start = Math.max(0, kwWordIdx - 3);
+                                const end = Math.min(words.length, kwWordIdx + 5);
+                                eventName = words.slice(start, end).join(' ');
+                            }
+                        }
+                        
+                        if (eventName && eventName.length > 2) {
+                            // Final cleanup: uppercase first letter
+                            eventName = eventName.charAt(0).toUpperCase() + eventName.slice(1);
+                            events.push({ name: eventName, date: dateStr });
+                            seenDates.add(dateStr);
+                        }
+                    }
+                }
+            }
+            extractEvents(dateRegex, cleanText);
+
+            // 8. Grading Breakdown (High-Fidelity Mirroring)
+            let grading = [];
+            
+            const gradingKeywords = /(?:Grading|Assessment|Evaluation|Weight|Scale|Breakdown|Points)/i;
+            let gIdx = cleanText.search(gradingKeywords);
+            let gradingSection = gIdx !== -1 ? cleanText.substring(gIdx, gIdx + 1500) : cleanText;
+
+            const gLines = gradingSection.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            let candidates = [];
+
+            // Pattern 1: Same line "Category ... 20%" or "Category 20"
+            gLines.forEach((line, lineIdx) => {
+                const m = line.match(/([a-z\s\(\)\/]{3,50})[:\s\.]+(\d{1,2}(?:\.\d+)?)\s?%?/i);
+                if (m) {
+                    const name = m[1].replace(/[:\.\-\*]/g, ' ').trim();
+                    const weight = parseFloat(m[2]);
+                    if (weight > 5 && weight <= 100 && name.length > 2) {
+                        candidates.push({ name, weight, line: lineIdx });
+                    }
+                }
+                
+                // Pattern 2: Stacked "Category" \n "20%"
+                if (line.match(/^(\d{1,2}(?:\.\d+)?)\s?%?$/)) {
+                    const weight = parseFloat(line);
+                    if (weight > 5 && weight <= 100 && lineIdx > 0) {
+                        let name = gLines[lineIdx - 1].replace(/[:\.\-\*]/g, ' ').trim();
+                        if (name.length > 2 && !/\d/.test(name) && !/total|grade|scale/i.test(name)) {
+                            candidates.push({ name, weight, line: lineIdx });
+                        }
+                    }
+                }
+            });
+
+            if (candidates.length > 0) {
+                // Deduplicate by line and then by name
+                const unique = [];
+                const seenLines = new Set();
+                const seenNames = new Set();
+                
+                candidates.forEach(c => {
+                    const nameSlug = c.name.toLowerCase().substring(0, 10);
+                    if (!seenLines.has(c.line) && !seenNames.has(nameSlug)) {
+                        unique.push(c);
+                        seenLines.add(c.line);
+                        seenNames.add(nameSlug);
+                    }
+                });
+
+                // Find a subset that sums to exactly 100
+                // We'll try a greedy approach first
+                let sum = 0;
+                let finalSet = [];
+                for (let c of unique) {
+                    if (sum + c.weight <= 100.5) {
+                        sum += c.weight;
+                        finalSet.push(c);
+                    }
+                }
+
+                if (sum >= 99 && sum <= 101) {
+                    grading = finalSet;
+                } else {
+                    // If greedy failed, just take the items that look most like assessments
+                    grading = unique.filter(c => !/participation|attendance/i.test(c.name)).concat(
+                        unique.filter(c => /participation|attendance/i.test(c.name))
+                    ).slice(0, 6);
+                }
+            }
+
+            if (!grading.length) {
+                grading = [{ name: 'Exams', weight: 40 }, { name: 'Assignments', weight: 60 }];
             }
 
             return {
-                code: codeMatch ? codeMatch[0] : '',
-                title: text.split('\n')[0].substring(0, 60).trim(),
-                instructor: instructorMatch ? instructorMatch[1] : (nameWithTitleMatch ? nameWithTitleMatch[0] : ''),
+                code: code,
+                title: title,
+                termYear: cleanText.match(/(?:Fall|Spring|Summer|Winter)\s?\d{4}/i)?.[0] || '',
+                modality: (/online|remote|zoom|teams/i.test(cleanText) ? 'Online' : (/hybrid|blended/i.test(cleanText) ? 'Hybrid' : 'In-person')),
+                instructor: instructorMatch ? instructorMatch[1] : '',
                 email: emailMatch ? emailMatch[0] : '',
-                time: timeMatch ? timeMatch[1].trim() : '',
-                location: locationMatch ? locationMatch[1].trim() : '',
-                officeHours: officeMatch ? officeMatch[1].trim() : '',
+                taName: taMatch ? taMatch[1] : '',
+                timeAndPlace: timeAndPlace,
+                office: officeInfo,
+                officeHours: officeHoursInfo,
                 grading: grading.length ? grading : [{ name: 'Exams', weight: 40 }, { name: 'Assignments', weight: 60 }],
                 events: events
             };
         }
 
+        function LogisticsInfo(text, type) {
+            if (type === 'modality') {
+                if (/online|asynchronous|remote|zoom/i.test(text)) return 'Online';
+                if (/hybrid|blended/i.test(text)) return 'Hybrid';
+                return 'In-person';
+            }
+            return null;
+        }
+
         function showVerificationForm(data) {
             const body = document.getElementById('modal-body');
             body.innerHTML = `
-                <div class="modal-header"><h2>Verify Details</h2></div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div class="form-group">
-                        <label class="form-label">Course Code</label>
-                        <input type="text" id="f-code" class="form-input" value="${data.code}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Course Title</label>
-                        <input type="text" id="f-title" class="form-input" value="${data.title}">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Instructor & Email</label>
-                    <div style="display:flex; gap:10px">
-                        <input type="text" id="f-instructor" class="form-input" placeholder="Name" value="${data.instructor}">
-                        <input type="text" id="f-email" class="form-input" placeholder="Email" value="${data.email}">
-                    </div>
-                </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
-                        <label class="form-label">Meeting Time</label>
-                        <input type="text" id="f-time" class="form-input" placeholder="e.g. MW 10am" value="${data.time}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Location</label>
-                        <input type="text" id="f-location" class="form-input" placeholder="Room #" value="${data.location}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Office Hours</label>
-                        <input type="text" id="f-office" class="form-input" placeholder="Days/Time" value="${data.officeHours}">
-                    </div>
-                </div>
-                
-                <div id="f-grading-container">
-                    <label class="form-label">Grading Breakdown (%)</label>
-                    ${data.grading.map((g, i) => `
-                        <div style="display:flex; gap:10px; margin-bottom:10px">
-                            <input type="text" class="form-input g-name" value="${g.name}" placeholder="Item">
-                            <input type="number" class="form-input g-weight" value="${g.weight}" style="width:80px">
+                <div class="form-section">
+                    <div class="form-section-title"><i data-lucide="info"></i> Basic Information</div>
+                    <div style="display:grid; grid-template-columns: 1fr 2fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label class="form-label">Course Code</label>
+                            <input type="text" id="f-code" class="form-input" value="${data.code}" placeholder="e.g. CS101">
                         </div>
-                    `).join('')}
+                        <div class="form-group">
+                            <label class="form-label">Course Title</label>
+                            <input type="text" id="f-title" class="form-input" value="${data.title}" placeholder="e.g. Intro to Computer Science">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modality</label>
+                            <select id="f-modality" class="form-input">
+                                <option value="In-person" ${data.modality === 'In-person' ? 'selected' : ''}>In-person</option>
+                                <option value="Online" ${data.modality === 'Online' ? 'selected' : ''}>Online</option>
+                                <option value="Hybrid" ${data.modality === 'Hybrid' ? 'selected' : ''}>Hybrid</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="f-events-container">
-                    <label class="form-label">Deadlines (Exams/Homework)</label>
-                    ${(data.events.length ? data.events : [{name:'', date:''}]).map(e => `
-                        <div style="display:flex; gap:10px; margin-bottom:10px">
-                            <input type="text" class="form-input e-name" value="${e.name}" placeholder="Event">
-                            <input type="text" class="form-input e-date" value="${e.date}" placeholder="Date">
+                <div class="form-section">
+                    <div class="form-section-title"><i data-lucide="user"></i> Contact Information</div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label class="form-label">Instructor Name</label>
+                            <input type="text" id="f-instructor" class="form-input" value="${data.instructor}" placeholder="Dr. Jane Doe">
                         </div>
-                    `).join('')}
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="f-email" class="form-input" value="${data.email}" placeholder="jane.doe@university.edu">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">TA Name</label>
+                            <input type="text" id="f-taName" class="form-input" value="${data.taName || ''}" placeholder="Assistant Name">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title"><i data-lucide="map-pin"></i> Schedule & Logistics</div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label class="form-label">Time and Place</label>
+                            <input type="text" id="f-time" class="form-input" value="${data.timeAndPlace}" placeholder="MWF 10-11am | Room 302">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Office</label>
+                            <input type="text" id="f-office" class="form-input" value="${data.office || ''}" placeholder="Bldg 5, Rm 12">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Office Hour</label>
+                            <input type="text" id="f-officeHours" class="form-input" value="${data.officeHours}" placeholder="Tues 2-4pm">
+                        </div>
+                    </div>
                 </div>
                 
-                <button onclick="saveSyllabus()" class="auth-btn">Save Summary</button>
+                <div class="form-section">
+                    <div class="form-section-title"><i data-lucide="bar-chart-3"></i> Grading Breakdown (%)</div>
+                    <div id="f-grading-container">
+                        ${data.grading.map((g, i) => `
+                            <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+                                <input type="text" class="form-input g-name" value="${g.name}" placeholder="Item (e.g. Midterm)">
+                                <input type="number" class="form-input g-weight" value="${g.weight}" style="width:100px" placeholder="0">
+                                <button class="delete-btn" style="position:static; padding:8px;" onclick="this.parentElement.remove()"><i data-lucide="x"></i></button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="view-btn" style="width: auto; margin-top: 10px;" onclick="addGradingRow()">
+                        <i data-lucide="plus"></i> Add Row
+                    </button>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title"><i data-lucide="alert-circle"></i> Key Deadlines</div>
+                    <div id="f-events-container">
+                        ${(data.events.length ? data.events : [{name:'', date:''}]).map(e => `
+                            <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+                                <input type="text" class="form-input e-name" value="${e.name}" placeholder="Event Name">
+                                <input type="text" class="form-input e-date" value="${e.date}" placeholder="Date">
+                                <button class="delete-btn" style="position:static; padding:8px;" onclick="this.parentElement.remove()"><i data-lucide="x"></i></button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="view-btn" style="width: auto; margin-top: 10px;" onclick="addEventRow()">
+                        <i data-lucide="plus"></i> Add Deadline
+                    </button>
+                </div>
+                
+                <div style="padding-top: 1rem; border-top: 1px solid var(--border); margin-top: 2rem;">
+                    <button onclick="saveSyllabus()" class="confirm-btn">
+                        <i data-lucide="check-circle-2"></i> Confirm & Save Summary
+                    </button>
+                </div>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function addGradingRow() {
+            const container = document.getElementById('f-grading-container');
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.style.marginBottom = '10px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="text" class="form-input g-name" placeholder="Item (e.g. Project)">
+                <input type="number" class="form-input g-weight" style="width:100px" placeholder="0">
+                <button class="delete-btn" style="position:static; padding:8px;" onclick="this.parentElement.remove()"><i data-lucide="x"></i></button>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function addEventRow() {
+            const container = document.getElementById('f-events-container');
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.style.marginBottom = '10px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="text" class="form-input e-name" placeholder="Event Name">
+                <input type="text" class="form-input e-date" placeholder="Date">
+                <button class="delete-btn" style="position:static; padding:8px;" onclick="this.parentElement.remove()"><i data-lucide="x"></i></button>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
         }
 
         function saveSyllabus() {
             const grading = [];
             document.querySelectorAll('#f-grading-container > div').forEach(div => {
-                const name = div.querySelector('.g-name').value;
+                const name = div.querySelector('.g-name').value.trim();
                 const weight = parseInt(div.querySelector('.g-weight').value);
-                if (name && weight) grading.push({ name, weight });
+                if (name && !isNaN(weight)) grading.push({ name, weight });
             });
 
             const events = [];
             document.querySelectorAll('#f-events-container > div').forEach(div => {
-                const name = div.querySelector('.e-name').value;
-                const date = div.querySelector('.e-date').value;
+                const name = div.querySelector('.e-name').value.trim();
+                const date = div.querySelector('.e-date').value.trim();
                 if (name && date) events.push({ name, date });
             });
 
             const newSummary = {
                 id: Date.now(),
-                code: document.getElementById('f-code').value,
-                title: document.getElementById('f-title').value,
-                instructor: document.getElementById('f-instructor').value,
-                email: document.getElementById('f-email').value,
-                time: document.getElementById('f-time').value,
-                location: document.getElementById('f-location').value,
-                officeHours: document.getElementById('f-office').value,
+                code: document.getElementById('f-code').value.trim(),
+                title: document.getElementById('f-title').value.trim(),
+                modality: document.getElementById('f-modality').value,
+                instructor: document.getElementById('f-instructor').value.trim(),
+                email: document.getElementById('f-email').value.trim(),
+                taName: document.getElementById('f-taName').value.trim(),
+                timeAndPlace: document.getElementById('f-time').value.trim(),
+                office: document.getElementById('f-office').value.trim(),
+                officeHours: document.getElementById('f-officeHours').value.trim(),
                 grading: grading,
                 events: events
             };
@@ -567,52 +1019,80 @@
             const course = currentUser.summaries.find(c => c.id === id);
             if (!course) return;
             const body = document.getElementById('modal-body');
+            
             body.innerHTML = `
-                <div class="modal-header">
-                    <span class="course-code">${course.code}</span>
-                    <h2>${course.title}</h2>
+                <div class="modal-header" style="padding: 0 0 1.5rem 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <span class="course-code">${course.code}</span>
+                            <h2 style="font-size: 2rem; margin-top: 0.5rem; line-height:1.2;">${course.title}</h2>
+                        </div>
+                        <div class="modality-tag" style="background:var(--accent-glow); color:var(--accent); padding:6px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; border:1px solid var(--accent);">
+                            ${course.modality || 'In-person'}
+                        </div>
+                    </div>
                 </div>
+
                 <div class="info-grid">
-                    <div>
-                        <span class="info-label">Instructor</span>
-                        <div class="info-value">${course.instructor || 'Not Set'}</div>
-                        <div class="info-value" style="color:var(--accent); font-size: 0.9rem">${course.email || ''}</div>
+                    <div class="info-item">
+                        <span class="info-label"><i data-lucide="user"></i> Instructor</span>
+                        <div class="info-value">${course.instructor || 'TBD'}</div>
+                        ${course.email ? `<div class="info-value" style="color:var(--accent); font-size: 0.85rem; margin-top: 4px; word-break:break-all;">
+                            <i data-lucide="mail" style="width:12px; height:12px; display:inline; vertical-align:middle; margin-right:4px;"></i> ${course.email}
+                        </div>` : ''}
                     </div>
-                    <div>
-                        <span class="info-label">Meeting Info</span>
-                        <div class="info-value">${course.time || 'TBD'}</div>
-                        <div class="info-value" style="font-size: 0.9rem; color: var(--text-dim)">${course.location || ''}</div>
+                    <div class="info-item">
+                        <span class="info-label"><i data-lucide="map-pin"></i> Time and Place</span>
+                        <div class="info-value">${course.timeAndPlace || 'TBD'}</div>
                     </div>
-                    <div>
-                        <span class="info-label">Office Hours</span>
+                    <div class="info-item">
+                        <span class="info-label"><i data-lucide="building"></i> Office</span>
+                        <div class="info-value">${course.office || 'Check Syllabus'}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i data-lucide="clock"></i> Office Hour</span>
                         <div class="info-value">${course.officeHours || 'Check Canvas'}</div>
                     </div>
+                    ${course.taName ? `
+                    <div class="info-item">
+                        <span class="info-label"><i data-lucide="users"></i> Teaching Assistant</span>
+                        <div class="info-value">${course.taName}</div>
+                    </div>` : ''}
                 </div>
-                <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap: 2rem;">
+
+                <div class="details-grid">
                     <div class="grading-section">
-                        <span class="info-label">Grading Breakdown</span>
+                        <div class="form-section-title" style="margin-bottom: 1.5rem;">
+                            <i data-lucide="bar-chart-3"></i> Grading Breakdown
+                        </div>
                         ${course.grading.map(g => `
                             <div class="grading-item">
-                                <span>${g.name}</span>
-                                <span style="font-weight:700">${g.weight}%</span>
+                                <span style="font-weight: 500; color: var(--text-main);">${g.name}</span>
+                                <span style="font-weight: 700; color: var(--accent);">${g.weight}%</span>
                             </div>
                             <div class="progress-container">
                                 <div class="progress-bar" style="width:${g.weight}%"></div>
                             </div>
-                        `).join('')}
+                        `).join('') || '<p style="color:var(--text-dim); font-size: 0.9rem;">No grading info available.</p>'}
                     </div>
-                    <div class="grading-section" style="background: rgba(56, 189, 248, 0.05)">
-                        <span class="info-label">Upcoming Deadlines</span>
-                        ${course.events.map(e => `
-                            <div class="deadline-item" style="opacity:1; animation:none; margin-bottom:0.75rem; padding: 0.75rem;">
-                                <div class="deadline-date" style="font-size:0.6rem">${e.date}</div>
-                                <div class="deadline-title" style="font-size:0.8rem">${e.name}</div>
-                            </div>
-                        `).join('') || '<div style="color:var(--text-dim); font-size: 0.8rem">No deadlines found.</div>'}
+
+                    <div class="deadline-list-compact">
+                        <div class="form-section-title" style="margin-bottom: 1.5rem;">
+                            <i data-lucide="alert-circle"></i> Key Deadlines
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            ${course.events.map(e => `
+                                <div class="compact-deadline">
+                                    <div class="date-pill">${e.date}</div>
+                                    <div class="title">${e.name}</div>
+                                </div>
+                            `).join('') || '<p style="color:var(--text-dim); font-size: 0.9rem;">No upcoming deadlines.</p>'}
+                        </div>
                     </div>
                 </div>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
+            lucide.createIcons();
         }
 
         function renderDashboard() {
@@ -621,8 +1101,14 @@
             grid.innerHTML = '';
             list.innerHTML = '';
 
+            // Update Stats
+            document.getElementById('stat-courses').innerText = currentUser.summaries.length;
+            let totalDeadlines = 0;
+            currentUser.summaries.forEach(s => totalDeadlines += s.events.length);
+            document.getElementById('stat-deadlines').innerText = totalDeadlines;
+
             if (!currentUser.summaries.length) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-dim); margin-top: 2rem;">No syllabuses uploaded yet. Use the card above to start!</p>';
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-dim); margin-top: 2rem;">here is not any course yet.</p>';
                 return;
             }
 
@@ -631,12 +1117,13 @@
             currentUser.summaries.forEach((course, index) => {
                 const card = document.createElement('div');
                 card.className = 'course-card';
+                card.style.animationDelay = `${index * 0.1}s`;
                 card.onclick = () => openDetails(course.id);
                 card.innerHTML = `
-                    <button class="delete-btn" onclick="deleteSummary(${course.id}, event)">Delete</button>
+                    <button class="delete-btn" onclick="deleteSummary(${course.id}, event)"><i data-lucide="trash-2" style="width:12px; height:12px;"></i> Delete</button>
                     <span class="course-code">${course.code}</span>
                     <div class="course-title">${course.title}</div>
-                    <button class="view-btn">View Summary</button>
+                    <button class="view-btn"><i data-lucide="eye"></i> View Summary</button>
                 `;
                 grid.appendChild(card);
                 
@@ -653,7 +1140,9 @@
 
             allEvents.forEach((e, i) => {
                 const item = document.createElement('div');
-                item.className = 'deadline-item';
+                const isExam = /exam|midterm|test|quiz|final/i.test(e.name);
+                const isHomework = /homework|assignment|hw|project|due/i.test(e.name);
+                item.className = `deadline-item ${isExam ? 'exam' : (isHomework ? 'homework' : '')}`;
                 item.style.animationDelay = `${i * 0.1}s`;
                 item.innerHTML = `
                     <div class="deadline-date">${e.date}</div>
@@ -662,11 +1151,76 @@
                 `;
                 list.appendChild(item);
             });
+            lucide.createIcons();
+        }
+
+        function openSettings() {
+            const body = document.getElementById('modal-body');
+            const theme = Store.getTheme();
+            
+            body.innerHTML = `
+                <div class="form-section">
+                    <div class="form-section-title"><i data-lucide="settings"></i> Application Settings</div>
+                    
+                    <div class="theme-toggle-card">
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-main);">Appearance</div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">Customize how SyllabusPro looks on your device</div>
+                        </div>
+                        <div class="theme-options">
+                            <button class="theme-btn ${theme === 'light' ? 'active' : ''}" onclick="updateTheme('light')">
+                                <i data-lucide="sun"></i> Light
+                            </button>
+                            <button class="theme-btn ${theme === 'dark' ? 'active' : ''}" onclick="updateTheme('dark')">
+                                <i data-lucide="moon"></i> Dark
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title"><i data-lucide="user"></i> Account Data</div>
+                    <div style="background: var(--bg-deep); padding: 1.5rem; border-radius: 20px; border: 1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="font-weight: 700; color: var(--text-main);">Clear All Course Data</div>
+                                <div style="font-size: 0.8rem; color: var(--text-dim);">This will permanently delete all your uploaded syllabi</div>
+                            </div>
+                            <button class="view-btn danger" style="width:auto; background:#fee2e2; color:var(--danger); border-color:#fecaca;" onclick="deleteAccountWithConfirm()">
+                                <i data-lucide="trash-2"></i> Clear Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modal-overlay').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function updateTheme(theme) {
+            Store.setTheme(theme);
+            // Re-render the settings modal to update button states
+            openSettings();
         }
 
         // --- Init ---
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.innerText.includes('Settings')) {
+                item.onclick = () => window.location.href = 'settings.html';
+            }
+        });
+
         document.getElementById('close-modal').onclick = () => document.getElementById('modal-overlay').style.display = 'none';
         window.onclick = (e) => { if(e.target.id === 'modal-overlay') document.getElementById('modal-overlay').style.display = 'none'; }
+
+        function scrollToSection(id) {
+            const el = id === 'right-panel' ? document.querySelector('.right-panel') : document.getElementById(id);
+            if (!el) return;
+            
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Add a temporary highlight effect
+            el.classList.add('highlight-section');
+            setTimeout(() => el.classList.remove('highlight-section'), 2000);
+        }
     </script>
 </body>
 </html>

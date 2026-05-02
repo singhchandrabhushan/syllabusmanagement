@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Pro | My Courses</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header" onclick="window.location.href='index.html'" style="cursor:pointer">
+            <div class="logo-icon"><i data-lucide="graduation-cap"></i></div>
+            <div class="logo-text">SyllabusPro</div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-item" onclick="window.location.href='index.html'"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+            <div class="nav-item active"><i data-lucide="book-open"></i> Courses</div>
+            <div class="nav-item" onclick="window.location.href='settings.html'"><i data-lucide="settings"></i> Settings</div>
+        </nav>
+
+        <div class="user-profile" onclick="toggleProfileMenu(event)">
+            <div class="profile-circle" id="profile-initials">??</div>
+            <div class="user-info">
+                <div class="user-name" id="user-display-name">Loading...</div>
+                <div class="user-role">Student Account</div>
+            </div>
+            <i data-lucide="more-vertical" style="width:16px; color:var(--text-dim)"></i>
+            <div class="profile-menu" id="profile-menu">
+                <button onclick="logoutWithConfirm()"><i data-lucide="log-out"></i> Sign Out</button>
+                <button onclick="deleteAccountWithConfirm()" class="danger"><i data-lucide="trash-2"></i> Delete Data</button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="dashboard-header">
+            <div class="header-text">
+                <h1>My Courses</h1>
+                <p>Manage and view all your enrolled courses</p>
+            </div>
+        </header>
+
+        <section class="content-section">
+            <div class="course-grid" id="course-grid">
+                <!-- Courses will be rendered here -->
+            </div>
+        </section>
+
+        <footer class="clean-footer">
+            <p>© 2026 Chandra Bhushan Singh</p>
+        </footer>
+    </main>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" id="close-modal">&times;</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        const Store = {
+            getUsers: () => JSON.parse(localStorage.getItem('syllabus_pro_users') || '[]'),
+            saveUsers: (users) => localStorage.setItem('syllabus_pro_users', JSON.stringify(users)),
+            getActiveUser: () => JSON.parse(localStorage.getItem('syllabus_pro_active')),
+            setActiveUser: (user) => localStorage.setItem('syllabus_pro_active', JSON.stringify(user)),
+            clearActiveUser: () => localStorage.removeItem('syllabus_pro_active'),
+            getTheme: () => localStorage.getItem('syllabus_pro_theme') || 'light',
+            setTheme: (theme) => {
+                localStorage.setItem('syllabus_pro_theme', theme);
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+        };
+
+        // Initialize Theme
+        Store.setTheme(Store.getTheme());
+
+        let currentUser = Store.getActiveUser();
+
+        window.onload = function () {
+            if (!currentUser) {
+                window.location.href = 'index.html';
+                return;
+            }
+            updateUI();
+            renderCourses();
+            lucide.createIcons();
+
+            // Link settings nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if (item.innerText.includes('Settings')) {
+                    item.onclick = () => window.location.href = 'index.html?openSettings=true';
+                }
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('user-display-name').innerText = currentUser.username;
+            const name = currentUser.username || "User";
+            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            document.getElementById('profile-initials').innerText = initials || '??';
+        }
+
+        function renderCourses() {
+            const grid = document.getElementById('course-grid');
+            grid.innerHTML = '';
+
+            if (!currentUser.summaries || currentUser.summaries.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: #fff; border-radius: 20px; border: 1px dashed var(--border);"><p style="color: var(--text-dim); font-size: 1.1rem;">here is not any course yet.</p></div>';
+                return;
+            }
+
+            currentUser.summaries.forEach((course, index) => {
+                const card = document.createElement('div');
+                card.className = 'course-card';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.onclick = () => openDetails(course.id);
+                card.innerHTML = `
+                    <button class="delete-btn" onclick="deleteSummary(${course.id}, event)"><i data-lucide="trash-2" style="width:12px; height:12px;"></i> Delete</button>
+                    <span class="course-code">${course.code}</span>
+                    <div class="course-title">${course.title}</div>
+                    <button class="view-btn"><i data-lucide="eye"></i> View Summary</button>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function openDetails(id) {
+            const course = currentUser.summaries.find(c => c.id === id);
+            if (!course) return;
+            const body = document.getElementById('modal-body');
+            
+            body.innerHTML = `
+                <div class="modal-header" style="padding: 0 0 1.5rem 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <span class="course-code">${course.code}</span>
+                            <h2 style="font-size: 2rem; margin-top: 0.5rem; line-height:1.2; color:var(--text-main);">${course.title}</h2>
+                        </div>
+                        <div class="modality-tag" style="background:var(--accent-glow); color:var(--accent); padding:6px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; border:1px solid var(--accent);">
+                            ${course.modality || 'In-person'}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1.25rem; background:var(--bg-deep); padding:1.5rem; border-radius:20px; border:1px solid var(--border); margin-bottom:2rem;">
+                    <div class="info-item">
+                        <span class="info-label" style="font-size:0.75rem; color:var(--text-dim); font-weight:700; display:flex; align-items:center; gap:6px;"><i data-lucide="user"></i> Instructor</span>
+                        <div class="info-value" style="font-weight:600; color:var(--text-main);">${course.instructor || 'TBD'}</div>
+                        ${course.email ? `<div class="info-value" style="color:var(--accent); font-size: 0.85rem; margin-top: 4px; word-break:break-all;">
+                            <i data-lucide="mail" style="width:12px; height:12px; display:inline; vertical-align:middle; margin-right:4px;"></i> ${course.email}
+                        </div>` : ''}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" style="font-size:0.75rem; color:var(--text-dim); font-weight:700; display:flex; align-items:center; gap:6px;"><i data-lucide="map-pin"></i> Time and Place</span>
+                        <div class="info-value" style="font-weight:600; color:var(--text-main);">${course.timeAndPlace || 'TBD'}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" style="font-size:0.75rem; color:var(--text-dim); font-weight:700; display:flex; align-items:center; gap:6px;"><i data-lucide="building"></i> Office</span>
+                        <div class="info-value" style="font-weight:600; color:var(--text-main);">${course.office || 'Check Syllabus'}</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label" style="font-size:0.75rem; color:var(--text-dim); font-weight:700; display:flex; align-items:center; gap:6px;"><i data-lucide="clock"></i> Office Hour</span>
+                        <div class="info-value" style="font-weight:600; color:var(--text-main);">${course.officeHours || 'Check Canvas'}</div>
+                    </div>
+                    ${course.taName ? `
+                    <div class="info-item">
+                        <span class="info-label" style="font-size:0.75rem; color:var(--text-dim); font-weight:700; display:flex; align-items:center; gap:6px;"><i data-lucide="users"></i> Teaching Assistant</span>
+                        <div class="info-value" style="font-weight:600; color:var(--text-main);">${course.taName}</div>
+                    </div>` : ''}
+                </div>
+
+                <div class="details-grid">
+                    <div class="grading-section" style="background:var(--card-bg); border:1px solid var(--border); border-radius:20px; padding:1.5rem;">
+                        <div class="form-section-title" style="margin-bottom: 1.5rem; color:var(--text-dim); font-weight:700; font-size:0.9rem; text-transform:uppercase;">
+                            <i data-lucide="bar-chart-3"></i> Grading Breakdown
+                        </div>
+                        ${course.grading.map(g => `
+                            <div class="grading-item" style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                                <span style="font-weight: 500; color:var(--text-main);">${g.name}</span>
+                                <span style="font-weight: 700; color: var(--accent);">${g.weight}%</span>
+                            </div>
+                            <div class="progress-container" style="height:8px; background:var(--bg-deep); border-radius:4px; overflow:hidden; margin-bottom:1rem;">
+                                <div class="progress-bar" style="height:100%; background:var(--accent-gradient); width:${g.weight}%"></div>
+                            </div>
+                        `).join('') || '<p style="color:var(--text-dim);">No grading info available.</p>'}
+                    </div>
+
+                    <div class="deadline-list-compact">
+                        <div class="form-section-title" style="margin-bottom: 1.5rem; color:var(--text-dim); font-weight:700; font-size:0.9rem; text-transform:uppercase;">
+                            <i data-lucide="alert-circle"></i> Key Deadlines
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            ${(course.events || []).map(e => `
+                                <div class="compact-deadline" style="display:flex; align-items:center; gap:12px; padding:10px; background:var(--bg-deep); border-radius:12px; border:1px solid var(--border);">
+                                    <div class="date-pill" style="background:var(--accent-glow); color:var(--accent); padding:4px 8px; border-radius:8px; font-size:0.7rem; font-weight:700; min-width:60px; text-align:center;">${e.date}</div>
+                                    <div class="title" style="font-size:0.85rem; font-weight:600; color:var(--text-main);">${e.name}</div>
+                                </div>
+                            `).join('') || '<p style="color:var(--text-dim);">No upcoming deadlines.</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modal-overlay').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function deleteSummary(id, e) {
+            e.stopPropagation();
+            if (!confirm('Delete this syllabus?')) return;
+            
+            currentUser.summaries = currentUser.summaries.filter(s => s.id !== id);
+            const users = Store.getUsers();
+            const userIndex = users.findIndex(u => (u.username === currentUser.username || u.email === currentUser.email));
+            users[userIndex] = currentUser;
+            Store.saveUsers(users);
+            Store.setActiveUser(currentUser);
+            renderCourses();
+        }
+
+        function toggleProfileMenu(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('profile-menu');
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function logoutWithConfirm() {
+            if (confirm('Are you sure you want to log out?')) {
+                Store.clearActiveUser();
+                currentUser = null;
+                window.location.href = 'index.html';
+            }
+        }
+
+        function deleteAccountWithConfirm() {
+            if (confirm('CRITICAL: Are you sure?')) {
+                const users = Store.getUsers().filter(u => u.username !== currentUser.username);
+                Store.saveUsers(users);
+                Store.clearActiveUser();
+                currentUser = null;
+                window.location.href = 'index.html';
+            }
+        }
+
+        document.getElementById('close-modal').onclick = () => document.getElementById('modal-overlay').style.display = 'none';
+        window.onclick = (e) => { if(e.target.id === 'modal-overlay') document.getElementById('modal-overlay').style.display = 'none'; }
+    </script>
+</body>
+</html>
