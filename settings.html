@@ -69,6 +69,43 @@
             </div>
 
             <div class="form-section">
+                <div class="form-section-title"><i data-lucide="shield-check"></i> Security & Profile</div>
+                <div style="background: var(--card-bg); padding: 2rem; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 2rem;">
+                    
+                    <!-- Username Change -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 1rem; margin-bottom: 0.75rem;">Display Name</label>
+                        <div style="display: flex; gap: 12px;">
+                            <input type="text" id="new-username" class="form-input" placeholder="Enter new username" style="flex: 1;">
+                            <button class="view-btn" style="width: auto; padding: 0 24px; background: var(--accent); color: #fff; border: none;" onclick="updateUsername()">Update Name</button>
+                        </div>
+                    </div>
+
+                    <div style="height: 1px; background: var(--border);"></div>
+
+                    <!-- Password Change -->
+                    <div>
+                        <label class="form-label" style="font-size: 1rem; margin-bottom: 1rem;">Change Password</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div class="auth-input-wrapper" style="margin-bottom: 0;">
+                                <input type="password" id="new-password" class="form-input" placeholder="New Password">
+                                <div class="password-toggle" id="toggle-new-password" onclick="togglePasswordVisibility('new-password', 'toggle-new-password')" style="top: 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </div>
+                            </div>
+                            <div class="auth-input-wrapper" style="margin-bottom: 0;">
+                                <input type="password" id="confirm-password" class="form-input" placeholder="Confirm Password">
+                                <div class="password-toggle" id="toggle-confirm-password" onclick="togglePasswordVisibility('confirm-password', 'toggle-confirm-password')" style="top: 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="view-btn" style="width: 100%; padding: 12px; background: var(--bg-deep); border: 1px solid var(--border);" onclick="updatePassword()">Update Password</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <div class="form-section-title"><i data-lucide="user"></i> Account Management</div>
                 <div style="background: var(--card-bg); padding: 2rem; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 20px;">
@@ -124,6 +161,7 @@
 
         function updateUI() {
             document.getElementById('user-display-name').innerText = currentUser.username;
+            document.getElementById('new-username').value = currentUser.username;
             const name = currentUser.username || "User";
             const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
             document.getElementById('profile-initials').innerText = initials || '??';
@@ -132,6 +170,45 @@
             const theme = Store.getTheme();
             document.getElementById('theme-light-btn').classList.toggle('active', theme === 'light');
             document.getElementById('theme-dark-btn').classList.toggle('active', theme === 'dark');
+        }
+
+        function updateUsername() {
+            const newName = document.getElementById('new-username').value.trim();
+            if (!newName) return alert('Please enter a username');
+            if (newName === currentUser.username) return alert('Username is the same');
+
+            const users = Store.getUsers();
+            const userIdx = users.findIndex(u => (u.username === currentUser.username || u.email === currentUser.email));
+            
+            currentUser.username = newName;
+            users[userIdx].username = newName;
+            
+            Store.saveUsers(users);
+            Store.setActiveUser(currentUser);
+            updateUI();
+            alert('Username updated successfully!');
+        }
+
+        function updatePassword() {
+            const newPass = document.getElementById('new-password').value.trim();
+            const confirmPass = document.getElementById('confirm-password').value.trim();
+
+            if (!newPass || !confirmPass) return alert('Please fill both password fields');
+            if (newPass !== confirmPass) return alert('Passwords do not match');
+            if (newPass.length < 4) return alert('Password too short (min 4 chars)');
+
+            const users = Store.getUsers();
+            const userIdx = users.findIndex(u => (u.username === currentUser.username || u.email === currentUser.email));
+            
+            currentUser.password = newPass;
+            users[userIdx].password = newPass;
+            
+            Store.saveUsers(users);
+            Store.setActiveUser(currentUser);
+            
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+            alert('Password updated successfully!');
         }
 
         function updateTheme(theme) {
@@ -162,6 +239,21 @@
                 window.location.href = 'index.html';
             }
         }
-    </script>
-</body>
-</html>
+
+        function togglePasswordVisibility(inputId, toggleId) {
+            const input = document.getElementById(inputId);
+            const toggle = document.getElementById(toggleId);
+            const icon = toggle.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+        </script>
+        </body>
+        </html>

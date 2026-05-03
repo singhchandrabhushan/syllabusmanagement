@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Pro | Admin Portal</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header" onclick="window.location.href='index.html'" style="cursor:pointer">
+            <div class="logo-icon"><i data-lucide="shield-check"></i></div>
+            <div class="logo-text">Admin Panel</div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-item" onclick="window.location.href='index.html'"><i data-lucide="layout-dashboard"></i> Student View</div>
+            <div class="nav-item active"><i data-lucide="bar-chart-big"></i> System Analytics</div>
+            <div class="nav-item" onclick="window.location.href='settings.html'"><i data-lucide="settings"></i> Settings</div>
+        </nav>
+
+        <div class="user-profile" onclick="toggleProfileMenu(event)">
+            <div class="profile-circle" id="profile-initials">AD</div>
+            <div class="user-info">
+                <div class="user-name" id="user-display-name">Administrator</div>
+                <div class="user-role">Super Admin</div>
+            </div>
+            <i data-lucide="more-vertical" style="width:16px; color:var(--text-dim)"></i>
+            <div class="profile-menu" id="profile-menu">
+                <button onclick="logoutWithConfirm()"><i data-lucide="log-out"></i> Sign Out</button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="dashboard-header">
+            <div class="header-text">
+                <h1>System Overview</h1>
+                <p>Real-time analytics for SyllabusPro</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-minimal">
+                    <span class="stat-label">System Status</span>
+                    <span class="stat-value" style="color:var(--success)">Online</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="admin-stats-grid">
+            <div class="admin-stat-card">
+                <span class="label">Total Registered Users</span>
+                <span class="value" id="total-users">0</span>
+                <div class="trend up"><i data-lucide="trending-up"></i> Live Tracking</div>
+            </div>
+            <div class="admin-stat-card">
+                <span class="label">Syllabi Processed</span>
+                <span class="value" id="total-summaries">0</span>
+                <div class="trend" style="color:var(--accent)"><i data-lucide="file-text"></i> Total Documents</div>
+            </div>
+            <div class="admin-stat-card">
+                <span class="label">System Uptime</span>
+                <span class="value">99.9%</span>
+                <div class="trend" style="color:var(--text-dim)"><i data-lucide="clock"></i> Stable</div>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="section-title-row">
+                <h2>User Directory</h2>
+                <div style="font-size: 0.85rem; color: var(--text-dim);">Detailed user activity breakdown</div>
+            </div>
+            
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>User Details</th>
+                            <th>Email Address</th>
+                            <th>summaries</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body">
+                        <!-- Users will be listed here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="clean-footer">
+            <p>© 2026 Admin Portal | Restricted Access</p>
+        </footer>
+    </main>
+
+    <script>
+        const Store = {
+            getUsers: () => JSON.parse(localStorage.getItem('syllabus_pro_users') || '[]'),
+            getActiveUser: () => JSON.parse(localStorage.getItem('syllabus_pro_active')),
+            clearActiveUser: () => localStorage.removeItem('syllabus_pro_active'),
+            getTheme: () => localStorage.getItem('syllabus_pro_theme') || 'light'
+        };
+
+        const isAdmin = (user) => user && user.email === 'admin@syllabuspro.com';
+
+        window.onload = function() {
+            const currentUser = Store.getActiveUser();
+            if (!isAdmin(currentUser)) {
+                alert('Unauthorized access. Redirecting to login.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Set Theme
+            document.documentElement.setAttribute('data-theme', Store.getTheme());
+            
+            renderAdminDashboard();
+            lucide.createIcons();
+        }
+
+        function renderAdminDashboard() {
+            const users = Store.getUsers();
+            const tableBody = document.getElementById('user-table-body');
+            
+            let totalSummaries = 0;
+            tableBody.innerHTML = '';
+
+            users.forEach(user => {
+                const count = user.summaries ? user.summaries.length : 0;
+                totalSummaries += count;
+                
+                const isUserAdmin = user.email === 'admin@syllabuspro.com';
+                const initials = user.username.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div class="user-badge">
+                            <div class="user-avatar-sm">${initials}</div>
+                            <div style="font-weight:700;">${user.username}</div>
+                        </div>
+                    </td>
+                    <td style="color:var(--text-dim)">${user.email || user.username}</td>
+                    <td><span style="font-weight:700; color:var(--accent)">${count}</span> courses</td>
+                    <td>
+                        <span class="status-pill ${isUserAdmin ? 'admin' : 'active'}">
+                            <i data-lucide="${isUserAdmin ? 'shield' : 'check'}"></i>
+                            ${isUserAdmin ? 'Administrator' : 'Active User'}
+                        </span>
+                    </td>
+                    <td>
+                        ${!isUserAdmin ? `<button class="delete-btn" style="position:static" onclick="deleteUser('${user.email || user.username}')"><i data-lucide="trash-2"></i></button>` : '—'}
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            document.getElementById('total-users').innerText = users.length;
+            document.getElementById('total-summaries').innerText = totalSummaries;
+            lucide.createIcons();
+        }
+
+        function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user? This will remove all their data from the local system.')) return;
+            const users = Store.getUsers().filter(u => (u.email !== id && u.username !== id));
+            localStorage.setItem('syllabus_pro_users', JSON.stringify(users));
+            renderAdminDashboard();
+        }
+
+        function toggleProfileMenu(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('profile-menu');
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function logoutWithConfirm() {
+            if (confirm('Log out from Admin Portal?')) {
+                Store.clearActiveUser();
+                window.location.href = 'index.html';
+            }
+        }
+
+        window.onclick = () => document.getElementById('profile-menu').style.display = 'none';
+    </script>
+</body>
+</html>
