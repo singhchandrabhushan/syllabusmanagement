@@ -127,10 +127,12 @@
                 card.style.animationDelay = `${index * 0.1}s`;
                 card.onclick = () => openDetails(course.id);
                 card.innerHTML = `
-                    <button class="delete-btn" onclick="deleteSummary(${course.id}, event)"><i data-lucide="trash-2" style="width:12px; height:12px;"></i> Delete</button>
+                    <button class="delete-btn" title="Delete Course" onclick="deleteSummary(${course.id}, event)"><i data-lucide="trash-2" style="width:12px; height:12px;"></i></button>
                     <div class="course-card-header">
-                        <span class="course-code">${course.code}</span>
-                        <div class="modality-tag" style="font-size: 0.6rem; padding: 2px 8px;">${course.modality || 'In-person'}</div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span class="course-code">${course.code}</span>
+                            <div class="modality-tag" style="font-size: 0.6rem; padding: 2px 8px;">${course.modality || 'In-person'}</div>
+                        </div>
                     </div>
                     <div class="course-title">${course.title}</div>
                     

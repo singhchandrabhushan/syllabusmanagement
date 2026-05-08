@@ -107,7 +107,21 @@
             </div>
 
             <div class="form-section">
-                <div class="form-section-title"><i data-lucide="user"></i> Account Management</div>
+                <div class="form-section-title"><i data-lucide="bell"></i> Notifications</div>
+                <div class="theme-toggle-card">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main);">Desktop Alerts</div>
+                        <div style="font-size: 0.8rem; color: var(--text-dim);">Get notified on the day of exams and deadlines</div>
+                    </div>
+                    <div class="notification-options">
+                        <label class="switch">
+                            <input type="checkbox" id="notification-toggle" onchange="toggleNotifications()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section-title"><i data-lucide="user"></i> Account Data</div>
                 <div style="background: var(--card-bg); padding: 2rem; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 20px;">
                         <div>
